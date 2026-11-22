@@ -1,4 +1,4 @@
-﻿; Установщик MollowLauncher (Inno Setup 6). Собирается build_installer.bat или GitHub Actions (.github/workflows/release.yml)
+; Установщик MollowLauncher (Inno Setup 6). Собирается build_installer.bat или GitHub Actions (.github/workflows/release.yml)
 #ifndef MyAppVersion
   #define MyAppVersion "2.0.1"
 #endif
@@ -69,8 +69,8 @@ begin
   begin
     DataDir := ExpandConstant('{userappdata}\.MollowLauncher');
     if DirExists(DataDir) then
-      if MsgBox('Удалить также игровые данные (сборки, миры, моды, аккаунты)?' + #13#10 + DataDir +
-                #13#10#13#10 + 'Это действие необратимо.', mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+      if MsgBox('Удалить также игровые данные (сборки, миры, моды, аккаунты)?' + #13#10 + DataDir + #13#10#13#10 +
+                'Это действие необратимо.', mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
         DelTree(DataDir, True, True, True);
   end;
 end;
