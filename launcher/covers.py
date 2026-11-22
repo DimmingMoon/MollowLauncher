@@ -19,6 +19,30 @@ SCENES = [  # (верх, середина, низ, солнце, тёмная?)
 ]
 
 
+PRESETS = [("Закат", 0), ("Ночь", 1), ("Сакура", 2), ("Небо", 3), ("Изумруд", 4), ("Океан", 5)]
+_src = {}
+
+
+def preset_source(idx):
+    """Стандартная обложка/фон №idx в полном размере (960×540)."""
+    if idx not in _src:
+        _src[idx] = _generated(f"preset-{idx}", COVER_W, COVER_H, scene=idx)
+    return _src[idx]
+
+
+def preset_pixmap(idx, w, h):
+    out = preset_source(idx).scaled(w, h, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                                    Qt.TransformationMode.SmoothTransformation)
+    return out.copy((out.width() - w) // 2, (out.height() - h) // 2, w, h)
+
+
+def set_preset(inst, idx):
+    """Ставит стандартную обложку сборке (как обычный cover.png — её можно сменить на свою)."""
+    if not preset_source(idx).save(str(inst.cover_path), "PNG"):
+        raise IOError("Не удалось сохранить обложку")
+    _cache.clear()
+
+
 def set_cover(inst, src_path):
     img = QImage(str(src_path))
     if img.isNull():
@@ -41,9 +65,12 @@ def has_cover(inst):
     return inst.cover_path.exists()
 
 
-def _generated(name, w, h):
+def _generated(name, w, h, scene=None):
     rnd = random.Random(int(hashlib.md5(name.encode()).hexdigest(), 16))
-    top, mid, bot, sun, dark = rnd.choice(SCENES)
+    chosen = rnd.choice(SCENES)
+    if scene is not None:
+        chosen = SCENES[scene % len(SCENES)]
+    top, mid, bot, sun, dark = chosen
     pm = QPixmap(w, h)
     p = QPainter(pm)
     g = QLinearGradient(0, 0, 0, h)

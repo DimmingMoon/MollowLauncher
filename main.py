@@ -55,6 +55,11 @@ def main():
     app.setApplicationName(paths.APP_NAME)
     icon = QIcon(str(paths.resource("assets/icon.png")))
     app.setWindowIcon(icon)
+    try:
+        from launcher.ui import brandgen
+        brandgen.ensure_assets()
+    except Exception:
+        _log(traceback.format_exc())
     _win = MainWindow(Config())
     _win.setWindowIcon(icon)
     _win.show()

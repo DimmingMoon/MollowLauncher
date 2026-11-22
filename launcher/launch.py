@@ -1,6 +1,6 @@
 import re
 
-from . import loaders, mojang, paths
+from . import brand, loaders, mojang, net, paths, skins
 from . import java as javamod
 
 
@@ -11,8 +11,9 @@ class JavaMissing(Exception):
 
 
 class Spec:
-    def __init__(self, java, args, cwd):
+    def __init__(self, java, args, cwd, notes=None):
         self.java, self.args, self.cwd = java, args, cwd
+        self.notes = notes or []  # пояснения для окна запуска (например, «скин не применён»)
 
 
 def _eff(inst, cfg, key):
@@ -40,6 +41,21 @@ def prepare(inst, cfg, progress):
         raise JavaMissing(major)
 
     inst.game_dir.mkdir(parents=True, exist_ok=True)
+    notes = []
+    try:
+        if skins.has_skin(acc["name"]) or skins.has_cape(acc["name"]):
+            notes += skins.apply(inst, acc["name"])
+    except net.Cancelled:
+        raise
+    except Exception as e:  # noqa
+        notes.append(f"Скин не применён: {e}")
+    try:
+        if cfg["game_logo"]:
+            brand.install_pack(inst)
+        else:
+            brand.remove_pack(inst)
+    except Exception as e:  # noqa
+        notes.append(f"Значок в меню игры не добавлен: {e}")
     assets_root, game_assets = mojang.prepare_assets(vj, inst.game_dir)
 
     cp_libs, _ = mojang.resolve_libraries(vj)
@@ -103,4 +119,4 @@ def prepare(inst, cfg, progress):
     args = [f"-Xms{_eff(inst, cfg, 'min_mem')}M", f"-Xmx{_eff(inst, cfg, 'max_mem')}M"]
     args += (cfg["jvm_args"] + " " + d.get("jvm_args", "")).split()
     args += jvm + [vj["mainClass"]] + game
-    return Spec(jp, args, str(inst.game_dir))
+    return Spec(jp, args, str(inst.game_dir), notes)

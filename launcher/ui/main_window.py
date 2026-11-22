@@ -20,6 +20,8 @@ from .pages.install import InstallPage
 from .pages.launch import LaunchPage
 from .pages.library import LibraryPage
 from .pages.settings import SettingsPage
+from .pages.skins import SkinsPage
+from .backdrop import Backdrop
 from .theme import PALETTES, repolish, tm
 from .accountswitch import AccountSwitch
 from .titlebar import EdgeGrip, TitleBar
@@ -201,17 +203,23 @@ class MainWindow(QWidget):
             "home": HomePage(self), "library": LibraryPage(self),
             "accounts": AccountsPage(self), "settings": SettingsPage(self),
             "install": InstallPage(self), "launch": LaunchPage(self), "instance": InstancePage(self),
+            "skins": SkinsPage(self),
         }
         for p in self.pages.values():
             self.stack.addWidget(p)
         self.launch_page = self.pages["launch"]
+        self.skins_page = self.pages["skins"]
 
         self.titlebar = TitleBar(self)
         body = QHBoxLayout()
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(0)
+        self.backdrop = Backdrop(self)  # фон лаунчера: рисуется за прозрачными страницами
+        bd = QVBoxLayout(self.backdrop)
+        bd.setContentsMargins(0, 0, 0, 0)
+        bd.addWidget(self.stack)
         body.addWidget(side)
-        body.addWidget(self.stack, 1)
+        body.addWidget(self.backdrop, 1)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)

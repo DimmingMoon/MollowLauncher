@@ -1,5 +1,11 @@
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QFileDialog, QFormLayout, QHBoxLayout, QLineEdit, QTabWidget, QVBoxLayout, QWidget
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import (
+    QFileDialog, QFormLayout, QHBoxLayout, QLineEdit, QTabWidget, QToolButton, QVBoxLayout, QWidget,
+)
+
+from ... import covers
 
 from ..widgets import Btn, card_frame, label, scrolled
 from .mods import ModsPanel
@@ -37,6 +43,22 @@ class InstancePage(QWidget):
 
         cf, cl = card_frame()
         cl.addWidget(label("Обложка", "h2"))
+        cl.addWidget(label("Стандартные обложки — выберите любую; потом её можно заменить своим изображением.",
+                           "muted", wrap=True))
+        prow = QHBoxLayout()
+        prow.setSpacing(8)
+        for i, (nm, _) in enumerate(covers.PRESETS):
+            pb = QToolButton()
+            pb.setProperty("thumb", True)
+            pb.setIcon(QIcon(covers.preset_pixmap(i, 112, 63)))
+            pb.setIconSize(QSize(112, 63))
+            pb.setFixedSize(122, 73)
+            pb.setToolTip(nm)
+            pb.setCursor(Qt.CursorShape.PointingHandCursor)
+            pb.clicked.connect(lambda _=False, k=i: self.preset(k))
+            prow.addWidget(pb)
+        prow.addStretch()
+        cl.addLayout(prow)
         cb = Btn("Сменить обложку…", "image")
         cr = Btn("Стандартная обложка", "refresh")
         cb.clicked.connect(lambda: self.inst and ctl.change_cover(self.inst))
@@ -93,6 +115,17 @@ class InstancePage(QWidget):
         self.jvm.setText(d["jvm_args"])
         self.mods.load(inst)
         self.tabs.setCurrentIndex(1 if tab == "mods" else 0)
+
+    def preset(self, k):
+        if not self.inst:
+            return
+        try:
+            covers.set_preset(self.inst, k)
+        except OSError as e:
+            self.ctl.toast(str(e), "error")
+            return
+        self.ctl.refresh_cards()
+        self.ctl.toast(f"Обложка «{covers.PRESETS[k][0]}» применена")
 
     def browse(self):
         p, _ = QFileDialog.getOpenFileName(self, "Выберите java / javaw")

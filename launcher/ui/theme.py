@@ -1,5 +1,6 @@
 """Theme Management: палитры, генерация QSS, сохранение выбора в конфигурации."""
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, replace
 from string import Template
 
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
@@ -35,6 +36,16 @@ PALETTES = {
     "monochrome": Palette("monochrome", "Monochrome", "#111111", "#1A1A1A", "#242424", "#E6E6E6",
                           "#FFFFFF", "#F2F2F2", "#9A9A9A", "#333333", "#111111"),
 }
+
+
+def valid_hex(s):
+    return bool(re.fullmatch(r"#[0-9a-fA-F]{6}", s or ""))
+
+
+def contrast(hex_color):
+    """Цвет текста на кнопке заданного цвета: тёмный на светлом, белый на тёмном."""
+    c = QColor(hex_color)
+    return "#05140C" if 0.299 * c.red() + 0.587 * c.green() + 0.114 * c.blue() > 150 else "#FFFFFF"
 
 
 def qc(hex_color, alpha=255):
@@ -106,6 +117,12 @@ QPushButton[nav="true"]:checked { background: $primary_soft; color: $primary; }
 QPushButton[seg="true"]:checked { background: $primary_soft; border: 1px solid $primary; color: $primary; }
 QToolButton { background: transparent; border: none; border-radius: 10px; padding: 6px; }
 QToolButton:hover { background: $surface2; }
+QToolButton[thumb="true"] { border: 2px solid transparent; border-radius: 10px; padding: 2px; }
+QToolButton[thumb="true"]:hover { background: transparent; border: 2px solid $text2; }
+QToolButton[thumb="true"]:checked { border: 2px solid $primary; }
+QSlider::groove:horizontal { height: 6px; background: $surface2; border-radius: 3px; }
+QSlider::sub-page:horizontal { background: $primary; border-radius: 3px; }
+QSlider::handle:horizontal { background: $text; width: 16px; height: 16px; margin: -5px 0; border-radius: 8px; }
 QScrollArea { border: none; background: transparent; }
 QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
 QScrollBar::handle:vertical { background: $border; border-radius: 4px; min-height: 30px; }
@@ -146,26 +163,49 @@ class ThemeManager(QObject):
 
     def __init__(self):
         super().__init__()
-        self.p = PALETTES["emerald"]
+        self.base = PALETTES["emerald"]  # палитра выбранной темы
+        self.p = self.base               # палитра с учётом своего цвета кнопок
         self.cfg = None
+
+    def _compose(self):
+        acc = self.cfg["accent"] if self.cfg is not None else ""
+        if valid_hex(acc):
+            c = QColor(acc).name()
+            self.p = replace(self.base, primary=c, primary_hover=QColor(c).lighter(118).name(),
+                             on_primary=contrast(c))
+        else:
+            self.p = self.base
 
     def init(self, cfg):
         self.cfg = cfg
-        self.p = PALETTES.get(cfg["theme"], PALETTES["emerald"])
+        self.base = PALETTES.get(cfg["theme"], PALETTES["emerald"])
+        self._compose()
 
     def set(self, theme_id):
         if theme_id not in PALETTES:
             return
-        self.p = PALETTES[theme_id]
+        self.base = PALETTES[theme_id]
         if self.cfg is not None:
             self.cfg["theme"] = theme_id
             self.cfg.save()
+        self._compose()
+        self.apply()
+        self.changed.emit()
+
+    def set_accent(self, hex_color):
+        """Свой цвет кнопок (#rrggbb); пустая строка — вернуть цвет темы."""
+        hex_color = hex_color.lower() if valid_hex(hex_color) else ""
+        if self.cfg is not None:
+            self.cfg["accent"] = hex_color
+            self.cfg.save()
+        self._compose()
         self.apply()
         self.changed.emit()
 
     def _assets(self):
         paths.CACHE.mkdir(parents=True, exist_ok=True)
-        arrow = paths.CACHE / f"arrow_{self.p.id}.png"
+        key = f"{self.p.id}_{self.p.primary.lstrip('#')}"
+        arrow = paths.CACHE / f"arrow_{key}.png"
         pm = QPixmap(24, 24)
         pm.fill(QColor(0, 0, 0, 0))
         g = QPainter(pm)
@@ -177,7 +217,7 @@ class ThemeManager(QObject):
         g.drawLine(12, 16, 19, 9)
         g.end()
         pm.save(str(arrow))
-        check = paths.CACHE / f"check_{self.p.id}.png"
+        check = paths.CACHE / f"check_{key}.png"
         pm = QPixmap(24, 24)
         pm.fill(QColor(0, 0, 0, 0))
         g = QPainter(pm)

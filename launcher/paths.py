@@ -33,6 +33,8 @@ VERSIONS = DATA / "versions"
 JAVA = DATA / "java"
 CACHE = DATA / "cache"
 CONFIG = DATA / "config.json"
+SKINS = DATA / "skins"
+BRAND = CACHE / "brand"
 
 
 def migrate_legacy():
@@ -70,6 +72,6 @@ def migrate_legacy():
 
 def ensure():
     migrated = migrate_legacy()
-    for p in (DATA, INSTANCES, LIBRARIES, ASSETS, VERSIONS, JAVA, CACHE):
+    for p in (DATA, INSTANCES, LIBRARIES, ASSETS, VERSIONS, JAVA, CACHE, SKINS, BRAND):
         p.mkdir(parents=True, exist_ok=True)
     return migrated

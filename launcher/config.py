@@ -16,6 +16,10 @@ DEFAULTS = {
     "height": 480,
     "theme": "emerald",
     "launcher_time": 0,
+    "accent": "",            # свой цвет кнопок (#rrggbb); пусто — цвет темы
+    "background": "none",    # none | scene:N | custom
+    "bg_dim": 72,            # затемнение фона, %
+    "game_logo": True,       # значок MollowLauncher в главном меню игры
 }
 
 NAME_RE = re.compile(r"^[A-Za-z0-9_]{3,16}$")

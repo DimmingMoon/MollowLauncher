@@ -128,6 +128,11 @@ class LaunchPage(QWidget):
         s.output.connect(lambda t, s=s: self._out(s, t))
         s.started.connect(lambda s=s: self._started(s))
         s.finished.connect(lambda code, s=s: self._finished(s, code))
+        for n in getattr(spec, "notes", []):
+            s.output.emit("[лаунчер] " + n + "\n")
+            s.log.append("[лаунчер] " + n + "\n")
+        if getattr(spec, "notes", None):
+            self.ctl.toast(spec.notes[0], "error")
         s.start()
         self.ctl.on_session_changed()
 

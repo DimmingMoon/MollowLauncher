@@ -8,7 +8,8 @@ from PyQt6.QtWidgets import (
 from ... import java as javamod
 from ... import net, paths
 from ..theme import PALETTES, tm
-from ..widgets import Btn, NumberEdit, ProgressBlock, card_frame, label, scrolled
+from ..personalize import Personalize
+from ..widgets import Btn, NumberEdit, ProgressBlock, ToggleSwitch, card_frame, label, scrolled
 
 
 def _spin(value, lo, hi, step=1):
@@ -37,25 +38,10 @@ class SettingsPage(QWidget):
         bl.setContentsMargins(0, 0, 8, 0)
         bl.setSpacing(14)
 
-        # --- тема
+        # --- персонализация (цвет кнопок, тема, фон)
         f, l = card_frame()
-        l.addWidget(label("Внешний вид", "h2"))
-        row = QHBoxLayout()
-        self.group = QButtonGroup(self)
-        self.group.setExclusive(True)
-        self.theme_btns = {}
-        for pid, pal in PALETTES.items():
-            b = Btn(pal.label)
-            b.setCheckable(True)
-            b.setProperty("seg", True)
-            b.setIcon(_dot(pal.primary))
-            b.setChecked(pid == tm.p.id)
-            b.clicked.connect(lambda _=False, k=pid: tm.set(k))
-            self.group.addButton(b)
-            self.theme_btns[pid] = b
-            row.addWidget(b)
-        row.addStretch()
-        l.addLayout(row)
+        self.pers = Personalize(ctl)
+        l.addWidget(self.pers)
         bl.addWidget(f)
 
         # --- запуск
@@ -82,6 +68,10 @@ class SettingsPage(QWidget):
         form.addRow("JVM-аргументы", self.jvm)
         form.addRow("Ширина окна", self.w)
         form.addRow("Высота окна", self.h)
+        self.logo_sw = ToggleSwitch(bool(cfg["game_logo"]))
+        self.logo_sw.setToolTip("Иконка и название MollowLauncher вместо логотипа Minecraft в главном меню игры")
+        self.logo_sw.toggled.connect(self.set_logo)
+        form.addRow("Логотип лаунчера в меню игры", self.logo_sw)
         l.addLayout(form)
         save = Btn("Сохранить", "check", "primary")
         save.clicked.connect(self.save)
@@ -141,7 +131,11 @@ class SettingsPage(QWidget):
         root.addWidget(scrolled(body), 1)
 
     def refresh(self):
-        self.theme_btns[tm.p.id].setChecked(True)
+        self.pers.refresh()
+
+    def set_logo(self, on):
+        self.ctl.cfg["game_logo"] = bool(on)
+        self.ctl.cfg.save()
 
     def browse(self):
         p, _ = QFileDialog.getOpenFileName(self, "Выберите java / javaw")

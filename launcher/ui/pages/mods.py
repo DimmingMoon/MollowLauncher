@@ -1,5 +1,5 @@
-from PyQt6.QtCore import QUrl, Qt
-from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtCore import QSize, QUrl, Qt
+from PyQt6.QtGui import QDesktopServices, QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QAbstractItemView, QFileDialog, QHBoxLayout, QHeaderView, QStackedWidget, QTableWidget, QTableWidgetItem,
     QVBoxLayout, QWidget,
@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 
 from ... import mods
 from ..widgets import Btn, SearchEdit, ToggleSwitch, card_frame, fmt_bytes, label
-from .modbrowser import ModBrowser
+from .modbrowser import ModBrowser, placeholder, rounded
 
 
 class ModsPanel(QWidget):
@@ -39,6 +39,7 @@ class ModsPanel(QWidget):
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["", "Мод", "Версия", "Загрузчик", "Размер"])
         self.table.verticalHeader().setVisible(False)
+        self.table.setIconSize(QSize(32, 32))
         self.table.setShowGrid(False)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -124,13 +125,23 @@ class ModsPanel(QWidget):
             hl.setContentsMargins(0, 0, 0, 0)
             hl.addWidget(sw, 0, Qt.AlignmentFlag.AlignCenter)
             self.table.setCellWidget(r, 0, holder)
-            self.table.setItem(r, 1, QTableWidgetItem(m.name))
+            it = QTableWidgetItem(m.name)
+            it.setIcon(self.mod_icon(m))
+            self.table.setItem(r, 1, it)
             self.table.setItem(r, 2, QTableWidgetItem(m.version or "—"))
             self.table.setItem(r, 3, QTableWidgetItem(m.kind))
             self.table.setItem(r, 4, QTableWidgetItem(fmt_bytes(m.size)))
             self.table.setRowHeight(r, 46)
         self.apply_filter()
         self.update_status()
+
+    @staticmethod
+    def mod_icon(m):
+        """Иконка из самого мода; если её нет — цветная плитка с первой буквой названия."""
+        pm = QPixmap()
+        if m.icon and pm.loadFromData(m.icon):
+            return QIcon(rounded(pm))
+        return QIcon(placeholder(m.name))
 
     def update_status(self):
         off = sum(1 for m in self.items if not m.enabled)

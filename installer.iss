@@ -63,14 +63,14 @@ Filename: "{app}\{#MyAppExe}"; Description: "Запустить {#MyAppName}"; F
 // Игровые данные (сборки, миры, моды, аккаунты) лежат в %APPDATA%\.MollowLauncher и по умолчанию остаются.
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
-  DataDir, Question: String;
+  DataDir: String;
 begin
   if (CurUninstallStep = usPostUninstall) and (not UninstallSilent) then
   begin
     DataDir := ExpandConstant('{userappdata}\.MollowLauncher');
-    Question := 'Удалить также игровые данные (сборки, миры, моды, аккаунты)?' + #13#10 + DataDir + #13#10#13#10 + 'Это действие необратимо.';
     if DirExists(DataDir) then
-      if MsgBox(Question, mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+      if MsgBox('Удалить также игровые данные (сборки, миры, моды, аккаунты)?' + #13#10 + DataDir +
+                #13#10#13#10 + 'Это действие необратимо.', mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
         DelTree(DataDir, True, True, True);
   end;
 end;
