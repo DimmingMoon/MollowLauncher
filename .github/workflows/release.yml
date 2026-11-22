@@ -1,5 +1,6 @@
 name: Release
 
+# Релиз: git tag v2.0.1 && git push origin v2.0.1  -> на GitHub появится Release с MollowLauncher_Setup.exe
 on:
   push:
     tags: ["v*"]
@@ -43,7 +44,7 @@ jobs:
         shell: pwsh
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
           & $iscc "/DMyAppVersion=${{ steps.ver.outputs.version }}" installer.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
